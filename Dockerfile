@@ -1,51 +1,34 @@
-# Dockerfile для Vite + React приложения
-FROM node:22-slim
+# Стадия сборки
+FROM node:22-alpine as builder
 
-# Устанавливаем рабочую директорию
 WORKDIR /app
-
-# Сначала копируем package.json для кеширования зависимостей
 COPY package.json package-lock.json* ./
 
-# Устанавливаем зависимости (включая devDependencies для сборки)
+# Устанавливаем ВСЕ зависимости (нужны dev для сборки)
 RUN npm ci
 
-# Копируем все остальные файлы
 COPY . .
 
 # Собираем приложение
 RUN npm run build
 
-# Устанавливаем nginx для раздачи статических файлов
-RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
+# ПРОВЕРЯЕМ РАЗМЕР
+RUN du -sh dist/ && ls -lh dist/
 
-# Копируем собранные файлы в nginx
-RUN cp -r dist/* /var/www/html/
+# Финальная стадия - ТОЛЬКО nginx
+FROM nginx:alpine
 
-# Создаем конфигурацию nginx
+# Копируем ТОЛЬКО собранные файлы
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Конфиг nginx для SPA
 RUN echo 'server { \
     listen 80; \
-    server_name _; \
-    root /var/www/html; \
+    root /usr/share/nginx/html; \
     index index.html; \
-    \
-    # Для SPA роутинга \
     location / { \
-        try_files $uri $uri/ /index.html; \
+        try_files \$uri \$uri/ /index.html; \
     } \
-    \
-    # Кэширование статических файлов \
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ { \
-        expires 1y; \
-        add_header Cache-Control "public, immutable"; \
-    } \
-}' > /etc/nginx/sites-available/default
+}' > /etc/nginx/conf.d/default.conf
 
-# Копируем конфиг и включаем сайт
-RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
-
-# Открываем порт
 EXPOSE 80
-
-# Запускаем nginx
-CMD ["nginx", "-g", "daemon off;"]
