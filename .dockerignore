@@ -13,7 +13,6 @@ yarn-error.log
 *.swo
 coverage
 .nyc_output
-dist
 build
 *.log
 
