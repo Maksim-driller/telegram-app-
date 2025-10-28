@@ -4,52 +4,39 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [
     react({
-      // Отключаем SWC и используем Babel
       babel: {
-        presets: [
-          [
-            "@babel/preset-react",
-            {
-              runtime: "automatic",
-            },
-          ],
-        ],
+        presets: [["@babel/preset-react", { runtime: "automatic" }]],
       },
     }),
   ],
-  optimizeDeps: {
-    exclude: ["@swc/core"],
-  },
-  // ДОБАВЬТЕ ЭТУ СЕКЦИЮ ДЛЯ ОПТИМИЗАЦИИ РАЗМЕРА
   build: {
     outDir: "dist",
-    // Отключаем source maps - экономит много места
-    sourcemap: false,
-    // Минификация кода
-    minify: "esbuild",
-    // Оптимизация разделения кода
+    sourcemap: false, // ВЫКЛЮЧИТЬ source maps - экономит 10-20 МБ!
+    minify: "terser", // Более агрессивная минификация
+    terserOptions: {
+      compress: {
+        drop_console: true, // Удалить console.log
+        drop_debugger: true,
+      },
+    },
     rollupOptions: {
       output: {
-        // Разделяем vendor библиотеки
         manualChunks: {
           vendor: ["react", "react-dom"],
           telegram: ["@telegram-apps/sdk"]
         },
         // Оптимизация имен файлов
-        chunkFileNames: "assets/[name]-[hash].js",
-        entryFileNames: "assets/[name]-[hash].js",
+        chunkFileNames: "js/[name]-[hash].js",
+        entryFileNames: "js/[name]-[hash].js",
         assetFileNames: "assets/[name]-[hash].[ext]"
       }
     },
-    // Уменьшаем размер вывода
+    // Уменьшаем target для лучшей совместимости и размера
     target: "es2015",
-    // Чистим выходную директорию
-    emptyOutDir: true
+    // Включаем brotli сжатие
+    reportCompressedSize: true,
   },
-  server: {
-    host: "0.0.0.0", // Слушать на всех интерфейсах
-    port: 5173, // Стандартный порт Vite
-    strictPort: false, // Если порт занят, попробовать следующий
-    open: false, // Не открывать браузер автоматически
+  optimizeDeps: {
+    exclude: ["@swc/core"],
   },
 });
