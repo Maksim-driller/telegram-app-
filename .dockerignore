@@ -1,0 +1,20 @@
+node_modules
+npm-debug.log
+yarn-error.log
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.git
+.gitignore
+.vscode
+.idea
+*.swp
+*.swo
+coverage
+.nyc_output
+dist
+build
+*.log
+
+# Важно: НЕ исключаем package.json и package-lock.json!
